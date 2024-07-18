@@ -1,0 +1,26 @@
+CREATE TABLE further_selectivity_testing (
+  primary_id int NOT NULL,
+  more_selective int NOT NULL,
+  some_content varchar(255)
+ );
+ 
+INSERT INTO further_selectivity_testing (primary_id, more_selective, some_content)
+SELECT 
+(i % 100) + 1,
+round(random() * 10),
+md5(random()::text)
+FROM generate_series(1, 10000000) as i;
+ 
+-- a common setup I see in some of the code I look at - low selectivity id, high selectivity id
+CREATE INDEX further_selectivity_testing_idx ON further_selectivity_testing (primary_id, more_selective);
+
+select * from further_selectivity_testing where primary_id = 50;
+
+EXPLAIN (ANALYZE, VERBOSE, BUFFERS)
+select * from further_selectivity_testing where primary_id = 50 and more_selective = 5644799;
+
+DROP INDEX further_selectivity_testing_idx;
+CREATE INDEX further_selectivity_testing_idx ON further_selectivity_testing (more_selective, primary_id);
+
+EXPLAIN (ANALYZE, VERBOSE, BUFFERS)
+select * from further_selectivity_testing where primary_id = 500 and more_selective = 5644799;
